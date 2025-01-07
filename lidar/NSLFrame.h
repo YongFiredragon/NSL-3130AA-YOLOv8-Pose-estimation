@@ -23,7 +23,7 @@
 #ifndef __NSL_FRAME_H__
 #define __NSL_FRAME_H__
 
-#define HAVE_CV_CUDA
+//#define HAVE_CV_CUDA
 #define DEEP_LEARNING
 
 #define MODEL_WIDTH			640

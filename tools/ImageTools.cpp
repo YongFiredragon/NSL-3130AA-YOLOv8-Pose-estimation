@@ -188,7 +188,7 @@ void ImageTools::drawPose(std::vector<YoloPose::Person> &detections, cv::Mat &im
 
 void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image, CaptureOptions &camOpt) {
 	auto textColor = cv::Scalar(255, 255, 255);
-	auto boxColor = cv::Scalar(0, 255, 0);
+	auto boxColor = cv::Scalar(255, 0, 0);
 	auto boxColorGray = cv::Scalar(114, 114, 114);
 	int thickness = 2;
 
@@ -226,13 +226,14 @@ void ImageTools::draw(std::vector<YoloPose::Person> &detections, cv::Mat &image,
 void ImageTools::draw(std::vector<YoloDet::Detection> &detections, cv::Mat &image, CaptureOptions &camOpt) 
 {
 	auto textColor = cv::Scalar(255, 255, 255);
-	auto boxColor = cv::Scalar(0, 255, 0);
+	auto boxColor = cv::Scalar(255, 255, 0);
 	auto boxColorGray = cv::Scalar(114, 114, 114);
 	int thickness = 2;
 
 	for (YoloDet::Detection &item: detections) {
 		cv::Rect box = item.box;
-		std::string infoString = std::to_string(item.confidence).substr(0, 4);
+//		std::string infoString = std::to_string(item.confidence).substr(0, 4);
+		std::string infoString = std::to_string(item.confidence).substr(0, 4) + "/" + std::to_string(item.class_id);
 		cv::Size textSize = cv::getTextSize(infoString, cv::FONT_HERSHEY_DUPLEX, 1, 1, nullptr);
 		cv::Rect textBox(box.x, box.y - 40, textSize.width + 10, textSize.height + 20);
 

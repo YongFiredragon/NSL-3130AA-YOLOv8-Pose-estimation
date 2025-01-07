@@ -28,9 +28,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "timeCheck.h"
+#include <opencv2/tracking.hpp>
+#include <map>
 
 #ifdef DEEP_LEARNING
 const int NUM_CLASSES = 1;
+// 트래커 관련 데이터 구조
+std::map<int, cv::Ptr<cv::Tracker>> trackers; // 객체 ID와 트래커 매핑
+std::map<int, cv::Rect2d> tracker_boxes;      // 객체 ID와 Bounding Box 매핑
+int nextId = 1;                               // 다음 객체 ID
 
 void YoloDet::init(const std::string &modelPath, const std::string &modelCfg, float threshold, int modeltype ) 
 {
@@ -67,6 +73,21 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
     static std::vector<cv::Mat> outputs;
 	std::vector<Detection> detections{};
 
+
+        // 기존 YOLO 감지 로직 유지
+        // ...
+
+        // 새로 감지된 객체를 기반으로 트래커 초기화
+        for (const auto &detection : detections)
+        {
+            int id = nextId++;
+            cv::Ptr<cv::Tracker> tracker = cv::TrackerCSRT::create();
+            tracker->init(mat, detection.box);
+            trackers[id] = tracker;
+            tracker_boxes[id] = detection.box;
+        }
+
+
 	if( modelType == YOLO_V8_DETECTION_TYPE ){
 		cv::dnn::blobFromImage(mat, blob, 1.0 / 255.0, model640Shape, cv::Scalar(), true, false);
 		net.setInput(blob);
@@ -94,6 +115,7 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
 			minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
 
 			if (maxClassScore > modelScoreThreshold && class_id.x == 0 ) { //seobi only person :: class_id.x == 0
+//			if (maxClassScore > modelScoreThreshold ) { //seobi only person :: class_id.x == 0
 				confidences.push_back(float(maxClassScore));
 				class_ids.push_back(class_id.x);
 		
@@ -178,9 +200,39 @@ int YoloDet::detect(cv::Mat &mat, CaptureOptions &camOpt)
 		ImageTools::draw(detections, mat, camOpt);
 	}
 
+    // 트래커 업데이트: YOLO 감지 없이 매 프레임 실행
+    for (auto it = trackers.begin(); it != trackers.end();)
+    {
+        int id = it->first;
+        cv::Ptr<cv::Tracker> tracker = it->second;
 
+        cv::Rect bbox;
+        if (tracker->update(mat, bbox))
+        {
+            tracker_boxes[id] = bbox; // tracker_boxes에 Rect_<int> 저장
+            ++it;
+        }
+        else
+        {
+            // 추적 실패 시 트래커 제거
+            it = trackers.erase(it);
+            tracker_boxes.erase(id);
+        }
+    }
 
-    return detections.size();
+    // 결과 시각화
+    for (auto it = tracker_boxes.begin(); it != tracker_boxes.end(); ++it)
+    {
+        int id = it->first;
+        const cv::Rect &bbox = it->second;
+
+        cv::rectangle(mat, bbox, cv::Scalar(0, 255, 0), 2);
+        cv::putText(mat, "ID: " + std::to_string(id), bbox.tl(),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 1);
+    }
+
+    return tracker_boxes.size();
+//    return detections.size();
 }
 
 #endif

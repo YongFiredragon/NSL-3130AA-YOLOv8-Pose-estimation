@@ -31,7 +31,9 @@
 #include "NSL3130AA.h"
 
 #ifdef HAVE_CV_CUDA
-#include <opencv2/cudawarping.hpp>
+//#include <opencv2/cudawarping.hpp>
+#else
+#include <opencv2/imgproc.hpp>
 #endif
 
 #define WIN_NAME			"nanosystems"
@@ -316,8 +318,7 @@ void videoSource::initDeepLearning( CaptureOptions &camOpt )
 			cv::Mat initImage(MODEL_WIDTH, MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 			yoloDet->init("../data/yolov8n.onnx", "", camOpt.detectThreshold, camOpt.modelType);
 			yoloDet->detect(initImage, camOpt);
-		}
-		else{ // camOpt.modelType == YOLO_V4_DETECTION_TYPE
+		} else { // modelType 3
 			cv::Mat initImage(V4_MODEL_WIDTH, V4_MODEL_HEIGHT, CV_8UC3, cv::Scalar(255,255,255)); 
 			yoloDet->init("../data/yolov4-csp.weights", "../data/yolov4-csp.cfg", camOpt.detectThreshold, camOpt.modelType); // 8fps
 			setCameraSize(V4_MODEL_WIDTH, V4_MODEL_HEIGHT);

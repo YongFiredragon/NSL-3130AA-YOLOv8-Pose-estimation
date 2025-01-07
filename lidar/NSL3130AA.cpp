@@ -25,7 +25,9 @@
 #include <string.h>
 #include <io.h>
 #include <process.h>
-#else
+#endif
+
+#ifdef __linux__
 #include <sstream> 
 #include <unistd.h>
 #include <string.h>
@@ -43,13 +45,39 @@
 #include <sys/time.h> 
 #endif
 
+#ifdef __APPLE__
+#include <sstream>
+#include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>     // 소켓 프로그래밍
+#include <netinet/in.h>     // 인터넷 주소 구조체
+#include <netinet/tcp.h>    // TCP 옵션
+#include <arpa/inet.h>      // IP 주소 변환 함수
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <termios.h>        // 터미널 IO 설정
+#include <sys/ioctl.h>      // 장치 제어
+#include <sys/time.h>       // 시간 함수
+#endif
+
+
 #include "NSL3130AA.h"
 #include "NSLFrame.h"
 
 #ifdef HAVE_CV_CUDA
 #include <opencv2/cudawarping.hpp>
+#else
+#include <opencv2/imgproc.hpp>
 #endif
 #include "timeCheck.h"
+
+#ifdef __APPLE__  // macOS에 대한 처리
+#define SERIAL_SPEED B115200  // 적절한 속도로 변경
+#else  // 리눅스에 대한 처리
+#define SERIAL_SPEED B4000000
+#endif
 
 using namespace cv;
 
@@ -1660,7 +1688,7 @@ pcl::visualization::PCLVisualizer::Ptr NSL3130AA::rgbVis(pcl::PointCloud<pcl::Po
 	viewer->addPointCloud<pcl::PointXYZRGB>(cloud, "sample cloud");
 	//viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
 	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-	//��ǥ��
+	//��ǥ��
 	viewer->addCoordinateSystem(1.0);
 	viewer->initCameraParameters();
 	viewer->setCameraPosition(0, 0, -5, 0, 0, 0, 0, -1, 0, 0);
@@ -1733,8 +1761,8 @@ int NSL3130AA::setSerialBaudrate(void)
 
 	tcgetattr (fileID, &tty); //TODO...
 
-	cfsetospeed (&tty, B4000000);
-	cfsetispeed (&tty, B4000000);
+	cfsetospeed (&tty, SERIAL_SPEED);
+	cfsetispeed (&tty, SERIAL_SPEED);
 
 	// no canonical processing
 	// disable IGNBRK for mismatched speed tests; otherwise receive break as \000 chars
